@@ -1,18 +1,22 @@
 var URL = 'http://localhost:8080';
+var markers = [];
+var _map;
+var isMapInitialized = false;
+var isIntervalSetted = false;
 
-function computeCenter(markers) {
+function computeCenter(positions) {
   var latitude = 0;
   var longitude = 0;
 
-  for (var i = 0; i < markers.length; i++) {
-    var marker = markers[i];
+  for (var i = 0; i < positions.length; i++) {
+    var position = positions[i];
 
-    latitude += marker.latitude;
-    longitude += marker.longitude;
+    latitude += position.latitude;
+    longitude += position.longitude;
   }
 
-  latitude /= markers.length;
-  longitude /= markers.length;
+  latitude /= positions.length;
+  longitude /= positions.length;
 
   return {lat: latitude, lng: longitude};
 }
@@ -21,28 +25,52 @@ function initMap() {
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function () {
     if (xhttp.readyState == 4 && xhttp.status == 200) {
-      _initMap(JSON.parse(xhttp.responseText));
+      var positions = JSON.parse(xhttp.responseText);
+      var cntr = computeCenter(positions);
+
+      if (isMapInitialized === false) {
+        _map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 15,
+          center: cntr
+        });
+        isMapInitialized = true;
+      } else {
+        _map.setCenter(cntr);
+      }
+
+      deleteMarkers();
+      for (var i = 0; i < positions.length; i++) {
+        var position = positions[i];
+        addMarker(position);
+      }
     }
   };
-  xhttp.open('GET', URL + '/markers');
+  xhttp.open('GET', URL + '/positions');
   xhttp.send();
+
+  if (isIntervalSetted === false) {
+    setInterval(initMap, 1000);
+    isIntervalSetted = true;
+  }
 }
 
-function _initMap(markers) {
-  var cntr = computeCenter(markers);
+function clearMarkers() {
+  for (var i = 0; i < markers.length; i++) {
+    markers[i].setMap(null);
+  }
+}
 
-  var _map = new google.maps.Map(document.getElementById('map'), {
-    zoom: 15,
-    center: cntr
+function deleteMarkers() {
+  clearMarkers();
+  markers = [];
+}
+
+function addMarker(pos) {
+  var marker = new google.maps.Marker({
+    position: {lat: pos.latitude, lng: pos.longitude},
+    map: _map,
+    title: pos.id
   });
 
-  for (var i = 0; i < markers.length; i++) {
-    var marker = markers[i];
-
-    new google.maps.Marker({
-      position: {lat: marker.latitude, lng: marker.longitude},
-      map: _map,
-      title: marker.id.toString()
-    });
-  }
+  markers.push(marker);
 }
