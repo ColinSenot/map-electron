@@ -1,18 +1,24 @@
-var URL = 'http://localhost:8080';
+var config = require('./config');
+
+var URL = config.url;
 var markers = [];
 var _map;
 var isMapInitialized = false;
 var isIntervalSetted = false;
 
 function computeCenter(positions) {
+  if (positions.length == 0) {
+    return 0;
+  }
+
   var latitude = 0;
   var longitude = 0;
 
   for (var i = 0; i < positions.length; i++) {
     var position = positions[i];
 
-    latitude += position.latitude;
-    longitude += position.longitude;
+    latitude += position.lat;
+    longitude += position.lon;
   }
 
   latitude /= positions.length;
@@ -45,7 +51,7 @@ function initMap() {
       }
     }
   };
-  xhttp.open('GET', URL + '/positions');
+  xhttp.open('GET', URL + '/locations');
   xhttp.send();
 
   if (isIntervalSetted === false) {
@@ -67,9 +73,9 @@ function deleteMarkers() {
 
 function addMarker(pos) {
   var marker = new google.maps.Marker({
-    position: {lat: pos.latitude, lng: pos.longitude},
-    map: _map,
-    title: pos.id
+    position: {lat: pos.lat, lng: pos.lon},
+    map: _map
+    //title: pos.id
   });
 
   markers.push(marker);
